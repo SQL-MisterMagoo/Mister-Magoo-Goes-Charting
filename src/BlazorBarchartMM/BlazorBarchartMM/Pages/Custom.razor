@@ -1,0 +1,106 @@
+﻿@page "/custom"
+
+<h1>Blazor Custom Chart</h1>
+<h5><i>Mister Magoo</i></h5>
+
+@if (listData is object)
+{
+	@if (FrameRate < 1)
+	{
+		<p>
+			This is a sample using @Count bars operating with at least 1 second between updates.
+		</p>
+	}
+	else
+	{
+		<p>
+			This is a sample using @Count bars operating at @FrameRate.ToString("N1") updates / sec.
+		</p>
+	}
+	<b>The minimum delay between bar updates is currently set at @Delay ms, but each bar is independent...</b>
+	<div style="display:flex; flex-direction:column;">
+		<input type="range" min="50" max="2000" step="50" bind="@Delay" class="form-control" style="grid-row:1; grid-column:1/-1;" />
+		<input type="range" min="5" max="50" step="5" bind="@Count" class="form-control" style="grid-row:2; grid-column:1/-1;" />
+		<input type="range" min="100" max="500" step="50" bind="@ChartHeight" class="form-control" style="grid-row:3; grid-column:1/-1;" />
+		<div style="@OuterStyle">
+			@for (int i = 0; i < listData.Length; i++)
+			{
+				int local = i;
+				<div style="@InnerStyle">
+					<BlazorBar MyId="@($"bar{i}")" HeightUnits="px" Height="@($"{((ChartHeight) * listData[local]) / 100}")" BarDuration="300" DampDuration="2000" BgColor="@($"hsl({local * 255 / (Count - 1)},60%,60%)")" Border="@($"{Math.Max(4, 20 - Count)}px solid hsl({local * 255 / (Count - 1)},90%,30%)")" Width="10px" />
+				</div>
+			}
+		</div>
+	</div>
+}
+@functions
+{
+		int[] listData;
+		Random rng;
+		System.Timers.Timer Timer2;
+		int frames;
+		double FrameRate;
+		int Delay = 250;
+		int _count = 20;
+		bool Cancel = false;
+		System.Threading.CancellationTokenSource tokenSource;
+		Task[] barTasks;
+		int ChartHeight = 250;
+		int Count
+		{
+			get => _count;
+			set { _count = value; ResetBars(); }
+		}
+
+		protected override void OnInit()
+		{
+			base.OnInit();
+			InnerStyle = $"display:flex; flex-direction:column-reverse; padding: 0; margin: 0; width:auto; grid-row:1;";
+			ResetBars();
+			Timer2 = new System.Timers.Timer(1000);
+			Timer2.Elapsed += Timer2_Elapsed;
+			Timer2.Start();
+		}
+		void ResetBars()
+		{
+			Cancel = true;
+			if (!(barTasks == null))
+			{
+				Console.WriteLine("Cancelling all tasks...");
+				tokenSource.Cancel();
+				Task.WhenAll(barTasks).ConfigureAwait(false).GetAwaiter().GetResult();
+				Console.WriteLine("All tasks cancelled...");
+				tokenSource.Dispose();
+			}
+			tokenSource = new System.Threading.CancellationTokenSource();
+			barTasks = new Task[Count];
+			listData = Enumerable.Range(1, Count).Select(x => 50).ToArray();
+			Invoke(StateHasChanged);
+			Cancel = false;
+			Enumerable.Range(0, Count).ToList().ForEach(x => barTasks[x] = Task.Factory.StartNew(() => ManageItem(x, tokenSource.Token)));
+		}
+		async Task ManageItem(int x, System.Threading.CancellationToken token)
+		{
+			Random rng = new Random(x);
+			while (!token.IsCancellationRequested)
+			{
+				await Task.Delay(Delay);
+				var margin = Math.Max(1, Math.Abs(100 - listData[x]));
+				listData[x] = Math.Min(100, Math.Max(10, listData[x] + rng.Next(-margin, margin)));
+				await Invoke(StateHasChanged);
+			}
+		}
+		protected override bool ShouldRender()
+		{
+			frames++;
+			return base.ShouldRender();
+		}
+		private void Timer2_Elapsed(object sender, EventArgs args)
+		{
+			FrameRate = frames;
+			frames = 0;
+		}
+		string OuterStyle => $"display:grid; border:solid thin gray; height:{ChartHeight+10}px; width:100%; grid-auto-columns:minmax(min-content,1fr); grid-template-rows: auto; grid-gap: 2px;";
+		string InnerStyle;
+		//
+}

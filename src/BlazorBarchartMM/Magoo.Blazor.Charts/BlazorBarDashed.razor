@@ -1,0 +1,29 @@
+﻿<blazor-bar id="@MyId" style="@Style"/>
+@functions
+{
+		string _id = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "");
+		double previousHeight;
+		double heightchange;
+
+		[Parameter] protected string MyId { get => _id; set { _id = value; } }
+		[Parameter] protected string Height { get; set; } = "50";
+		[Parameter] protected string HeightUnits { get; set; } = "%";
+		[Parameter] protected string Width { get; set; } = "10px";
+		[Parameter] protected string BgColor { get; set; } = "green";
+		[Parameter] protected string Color { get; set; } = "white";
+		[Parameter] protected string Border { get; set; } = "2px solid orange";
+		[Parameter] protected double BarDuration { get; set; } = 300;
+		[Parameter] protected double DampDuration { get; set; } = 1000;
+
+		bool IsHeightDecreasing()
+		{
+			double.TryParse(Height, out double newHeight);
+			heightchange = newHeight - previousHeight;
+			bool result = heightchange < 0;
+			previousHeight = newHeight;
+			return result;
+		}
+
+		string transition => IsHeightDecreasing() ? $"height {DampDuration * Math.Abs(heightchange) / 250}ms ease-in" : $"height {BarDuration}ms ease-in";
+		string Style => $"--bb-bl: var(--bb-w) dashed {BgColor};--bb-bc: unset;--bb-w: {Width};--bb-bt:{Border};--bb-h: {Height}{HeightUnits};--bb-t: {transition};--bb-id:{BarDuration}ms;";
+}

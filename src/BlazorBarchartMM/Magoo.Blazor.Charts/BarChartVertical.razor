@@ -1,0 +1,90 @@
+﻿
+@if (Data is object)
+{
+	<div id="@MyId" style="@OuterStyle">
+		@for (int i = 0; i < Count; i++)
+		{
+			int local = i;
+		<div style="@InnerStyle">
+			@switch (BarStyle)
+			{
+				case BlazorBarStyle.Normal:
+			<BlazorBar MyId="@($"{MyId}-{local}")"
+								 HeightUnits="@HeightUnitsCalc"
+								 BarDuration="@BarDuration"
+								 DampDuration="@DampDuration"
+								 Height="@HeightCalc(local)"
+								 BgColor="@BgColorCalc(local)"
+								 Border="@BorderCalc(local)"
+								 Width="@BarWidthCalc(local)" />
+					break;
+				case BlazorBarStyle.Dashed:
+			<BlazorBarDashed MyId="@($"{MyId}-{local}")"
+								 HeightUnits="@HeightUnitsCalc"
+								 BarDuration="@BarDuration"
+								 DampDuration="@DampDuration"
+								 Height="@HeightCalc(local)"
+								 BgColor="@BgColorCalc(local)"
+								 Border="@BorderCalc(local)"
+								 Width="@BarWidthCalc(local)" />
+					break;
+				case BlazorBarStyle.Dotted:
+			<BlazorBarDotted MyId="@($"{MyId}-{local}")"
+								 HeightUnits="@HeightUnitsCalc"
+								 BarDuration="@BarDuration"
+								 DampDuration="@DampDuration"
+								 Height="@HeightCalc(local)"
+								 BgColor="@BgColorCalc(local)"
+								 Border="@BorderCalc(local)"
+								 Width="@BarWidthCalc(local)" />
+					break;
+				default:
+					break;
+			}
+		</div>
+		}
+	</div>
+}
+@functions
+{
+		string _id;
+		[Parameter] protected int ChartHeight { get; set; } = 250;
+		[Parameter] protected int BarCount { get; set; }
+		[Parameter] protected Func<int> BarCountFunc { get; set; }
+		[Parameter] protected IEnumerable<double> Data { get; set; }
+		[Parameter] protected Func<int, double> DataFunc { get; set; }
+		[Parameter] protected string MyId { get => _id; set { _id = value; } }
+		[Parameter] protected string HeightUnits { get; set; } = "px";
+		[Parameter] protected string BarWidth { get; set; }
+		[Parameter] protected Func<int, string> BarWidthFunc { get; set; }
+		[Parameter] protected string BgColor { get; set; }
+		[Parameter] protected string Color { get; set; } = "white";
+		[Parameter] protected string Border { get; set; }
+		[Parameter] protected double BarDuration { get; set; } = 300;
+		[Parameter] protected double DampDuration { get; set; } = 1000;
+		[Parameter] protected string InnerStyle { get; set; } = "display:flex; flex-direction:column-reverse; padding: 0; margin: 0; width:auto; grid-row:1;";
+		[Parameter] protected string OuterStyle { get; set; }
+		[Parameter] protected BlazorBarStyle BarStyle { get; set; } = BlazorBarStyle.Normal;
+
+		int Count => Data?.Count() ?? (BarCount > 0 ? BarCount : (BarCountFunc?.Invoke() ?? 0));
+
+		protected override void OnInit()
+		{
+			base.OnInit();
+		}
+
+		protected override void OnParametersSet()
+		{
+			base.OnParametersSet();
+			OuterStyle = $"display:grid; border:solid thin gray; height:{ChartHeight + 10}px; width:100%; grid-auto-columns:minmax(min-content,1fr); grid-gap: 2px;";
+		}
+
+		string HeightUnitsCalc => HeightUnits.Equals("%") ? "px" : HeightUnits;
+		string BarWidthCalc(int index) => BarWidthFunc?.Invoke(index) ?? BarWidth;
+
+		string BgColorCalc(int index) => string.IsNullOrWhiteSpace(BgColor) ? $"hsl({index * 255 / (Count - 1)},60%,60%)" : BgColor;
+		string BorderCalc(int index) => string.IsNullOrWhiteSpace(Border) ? $"{Math.Max(4, 20 - Count)}px solid hsl({index * 255 / (Count - 1)},90%,30%)" : Border;
+		string HeightCalc(int index) => HeightUnits.Equals("%") ? $"{ChartHeight * Data.ElementAt(index) / 100}" : Data.ElementAt(index).ToString();
+
+		// END
+}

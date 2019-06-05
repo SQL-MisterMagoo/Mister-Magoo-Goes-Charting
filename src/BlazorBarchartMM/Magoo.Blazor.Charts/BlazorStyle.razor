@@ -1,0 +1,8 @@
+﻿<style>
+	@($"#{Id}") @style
+</style>
+
+@functions {
+		[Parameter] protected RenderFragment style { get; set; }
+		[Parameter] protected string Id { get; set; }
+}

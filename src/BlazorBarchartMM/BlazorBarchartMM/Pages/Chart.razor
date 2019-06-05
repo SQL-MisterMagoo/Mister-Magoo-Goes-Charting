@@ -1,0 +1,104 @@
+﻿@page "/chart"
+
+<h1>Blazor Live Chart</h1>
+<h5><i>Mister Magoo</i></h5>
+
+@if (listData is object)
+{
+	@if (FrameRate < 1)
+	{
+		<p>
+			This is a sample live chart with @Count bars operating with at least 1 second between updates.
+		</p>
+	}
+	else
+	{
+		<p>
+			This is a sample live chart with @Count bars operating at @FrameRate.ToString("N1") updates / sec.
+		</p>
+	}
+	<b>The minimum delay between bar updates is currently set at @Delay ms, but each bar is independent...</b>
+	<div style="display:flex; flex-direction:column;">
+		<input type="range" min="50" max="2000" step="50" bind="@Delay" class="form-control" style="grid-row:1; grid-column:1/-1;" />
+		<input type="range" min="5" max="50" step="5" bind="@Count" class="form-control" style="grid-row:2; grid-column:1/-1;" />
+		<input type="range" min="100" max="500" step="50" bind="@ChartHeight" class="form-control" style="grid-row:3; grid-column:1/-1;" />
+		<BarChartVertical Data="@listData"
+											BarStyle="@BlazorBarStyle.Normal"
+											ChartHeight="@ChartHeight"
+											HeightUnits="%"
+											BarDuration="@Math.Min(Delay,200)"
+											DampDuration="1000"/>
+	</div>
+}
+@functions
+{
+		double[] listData;
+		Random rng;
+		System.Timers.Timer Timer2;
+		int frames;
+		double FrameRate;
+		int Delay = 500;
+		int _count = 15;
+		bool Cancel = false;
+		System.Threading.CancellationTokenSource tokenSource;
+		Task[] barTasks;
+		int ChartHeight = 450;
+		int Count
+		{
+			get => _count;
+			set { _count = value; ResetBars(); }
+		}
+
+		protected override void OnInit()
+		{
+			base.OnInit();
+			ResetBars();
+			Timer2 = new System.Timers.Timer(1000);
+			Timer2.Elapsed += Timer2_Elapsed;
+			Timer2.Start();
+		}
+		void ResetBars()
+		{
+			Cancel = true;
+			if (!(barTasks == null))
+			{
+				Console.WriteLine("Cancelling all tasks...");
+				tokenSource.Cancel();
+				Task.WhenAll(barTasks).ConfigureAwait(false).GetAwaiter().GetResult();
+				Console.WriteLine("All tasks cancelled...");
+				tokenSource.Dispose();
+			}
+			tokenSource = new System.Threading.CancellationTokenSource();
+			barTasks = new Task[Count];
+			listData = Enumerable.Range(1, Count).Select(x => 30.0 - x / 2).ToArray();
+			Invoke(StateHasChanged);
+			Cancel = false;
+			Enumerable.Range(0, Count).ToList().ForEach(x => barTasks[x] = Task.Factory.StartNew(() => ManageItem(x, tokenSource.Token)));
+		}
+		async Task ManageItem(int x, System.Threading.CancellationToken token)
+		{
+			Random rng = new Random(x);
+			int y = x;
+			while (!token.IsCancellationRequested)
+			{
+				await Task.Delay(Delay);
+				var pival = 50 + 45.0 * Math.Sin((double)y/(double)Count * 2.0 * Math.PI );
+				//var margin = Math.Max(1, Math.Abs(100 - listData[x]));
+				//listData[x] = Math.Min(100, Math.Max(10, listData[x] + (double)rng.Next((int)-margin, (int)margin)));
+				listData[x] = pival;
+				y = (y+1) % Count;
+				await Invoke(StateHasChanged);
+			}
+		}
+		protected override bool ShouldRender()
+		{
+			frames++;
+			return base.ShouldRender();
+		}
+		private void Timer2_Elapsed(object sender, EventArgs args)
+		{
+			FrameRate = frames;
+			frames = 0;
+		}
+		//
+}

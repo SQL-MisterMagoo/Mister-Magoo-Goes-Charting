@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Magoo.Blazor.Charts\Magoo.Blazor.Charts.csproj" />
+    <ProjectReference Include="..\ShawtyMagoo.Blazor.Audio\ShawtyMagoo.Blazor.Audio.csproj" />
   </ItemGroup>
 
 </Project>

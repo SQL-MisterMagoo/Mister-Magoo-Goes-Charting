@@ -1,0 +1,105 @@
+﻿@page "/amp"
+
+<h1>Blazor Live Amp</h1>
+<h5><i>Mister Magoo (audio analysis code by Peter Shaw)</i></h5>
+<button onclick=@(()=>Play("bensound-ukulele.mp3"))>Ukelele ( https://www.bensound.com )</button>
+<button onclick=@(()=>Play("bensound-happyrock.mp3"))>Happy Rock ( https://www.bensound.com )</button>
+<button onclick=@(()=>Play("bensound-acousticbreeze.mp3"))>Acoustic Breeze ( https://www.bensound.com )</button>
+<button onclick=@(()=>Play("crooner2.mp3"))>Crooner </button>
+<button onclick=@ToggleLimit>Toggle Rate Limit (@RateLimit)</button>
+
+@if (listData is object)
+{
+	@if (FrameRate < 1)
+	{
+		<p>
+			This is a sample live chart operating with at least 1 second between updates.
+		</p>
+	}
+	else
+	{
+		<p>
+			This is a sample live chart operating at @FrameRate.ToString("N1") updates / sec.
+		</p>
+	}
+	<div style="display:flex; flex-direction:column;">
+		<BarChartVertical Data="@listData"
+											BarStyle="@BlazorBarStyle.Normal"
+											ChartHeight="260"
+											HeightUnits="px"
+											BarDuration="@(RateLimit ? 200 : 0)"
+											DampDuration="@(RateLimit ? 5000 : 500)" />
+	</div>
+}
+
+@functions
+{
+	double[] listData;
+	int frames, FrameRate;
+	bool RateLimit;
+	System.Timers.Timer Timer2;
+	System.Diagnostics.Stopwatch StopWatch;
+
+	[Inject] ShawtyMagoo.Blazor.Audio.SMAudio SMAudio { get; set; }
+	[Inject] IJSRuntime JSRuntime { get; set; }
+
+	protected override void OnInit()
+	{
+		base.OnInit();
+		SMAudio.OnGotFrequencyData += ProcessData;
+		Timer2 = new System.Timers.Timer(1000);
+		Timer2.Elapsed += Timer2_Elapsed;
+		Timer2.Start();
+		StopWatch = new System.Diagnostics.Stopwatch();
+	}
+
+
+	async Task Play(string filename)
+	{
+		await SMAudio.Stop(JSRuntime);
+		await SMAudio.Play(JSRuntime, filename);
+		if (RateLimit)
+		{
+			StopWatch.Start();
+		}
+	}
+
+	void ToggleLimit()
+	{
+		RateLimit = !RateLimit;
+		if (RateLimit)
+		{
+			StopWatch.Start();
+		}
+		else
+		{
+			StopWatch.Stop();
+		}
+	}
+
+	public void ProcessData(object sender, short[] values)
+	{
+		if (RateLimit)
+		{
+			if (StopWatch.ElapsedMilliseconds < 200)
+				return;
+		}
+		listData = values.Select(x => (double)x).ToArray();
+		Invoke(StateHasChanged);
+		if (RateLimit)
+		{
+			StopWatch.Restart();
+		}
+	}
+	protected override bool ShouldRender()
+	{
+		frames++;
+		return base.ShouldRender();
+	}
+	private void Timer2_Elapsed(object sender, EventArgs args)
+	{
+		FrameRate = frames;
+		frames = 0;
+	}
+	//
+}

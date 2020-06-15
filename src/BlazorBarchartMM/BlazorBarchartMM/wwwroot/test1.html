@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Audio test thing by shawty</title>
+</head>
+
+<body>
+  <h1>Audio Test thing by Shawty</h1>
+  <h3 id="notifs" style="color: red;">notifications go here</h3>
+  <br/>
+  <button id="testbtn" disabled>Not Loaded</button>
+  <p>This rectangle is a canvas</p>
+  <canvas width="800" height="600" id="canvas" style="border: 1px solid black"></canvas>
+</body>
+
+<script>
+
+  // Global vars
+
+  let audioFileName = "devil.mp3";
+  let canvasWidth = 800;
+  let canvasHeight = 600;
+  let buttonName = "testbtn";
+  let canvasName = "canvas";
+
+  let audioContext = null;
+  let audioBuffer = null;
+  let audioSource = null;
+  let audioAnalyser = null;
+  let audioFequencies = null;
+  let audioTimes = null;
+
+  let playingFlag = false;
+
+  // Functions and stuff
+
+  function unDisableButton(buttonName) {
+    let btn = document.getElementById(buttonName);
+    btn.disabled = false;
+  }
+
+  function setButtonText(buttonName, newText) {
+    let btn = document.getElementById(buttonName);
+    btn.innerText = newText;
+  }
+
+  function createAudioAnalyzer()
+  {
+    // The analyser is responsible for providing data on the playing sound
+    audioAnalyser = audioContext.createAnalyser();
+    audioAnalyser.connect(audioContext.destination); // The analyser connects to the speaker output
+    audioAnalyser.minDecibels = -140; // Loudest end of the audio to map
+    audioAnalyser.maxDecibels = 0; // Quietest end of the audio to map
+    audioFequencies = new Uint8Array(audioAnalyser.frequencyBinCount); // Set up some funky byte arrays to recieve the frequency data
+    audioTimes = new Uint8Array(audioAnalyser.frequencyBinCount);
+  }
+
+  function loadAudio(audioFileName) {
+
+    // Use standard ajax to grab the audio file from the server
+    let request = new XMLHttpRequest();
+
+    request.open("GET", audioFileName, true);
+    request.responseType = 'arraybuffer';
+
+    request.onload = () => {
+      audioContext.decodeAudioData(request.response, (buffer) => {
+
+        audioBuffer = buffer;
+        audioLoadedHandler();
+
+      });
+    }
+    request.send();
+  }
+
+  function playAudio() {
+    // The buffer source is responsible for holding the actual currently playing audio
+    audioSource = audioContext.createBufferSource();
+
+    audioSource.buffer = audioBuffer; // Attach our loaded buffer to the source/player buffer
+    audioSource.connect(audioAnalyser); // The actual sound connects to the analyser
+    audioSource.start(0); // Start at the beginning, this can be any SMTPE ticks, time period into the audio
+  }
+
+  function stopAudio() {
+    audioSource.stop();
+  }
+
+  function drawFrequencyGraph(timeStamp)
+  {
+    audioAnalyser.smoothingTimeConstant = 0.8;
+    audioAnalyser.fftSize = 64;
+
+    audioAnalyser.getByteFrequencyData(audioFequencies);
+
+    let freqWidth = Math.floor(1/audioFequencies.length, 10);
+
+    let canvasHandle = document.getElementById(canvasName);
+    let canvasContext = canvasHandle.getContext("2d");
+
+    canvasContext.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    for(let index = 0; index < audioAnalyser.frequencyBinCount; index++)
+    {
+      let value = audioFequencies[index];
+      let percent = value/256;
+      let height = canvasHeight * percent;
+      let offset = canvasHeight - height - 1;
+      let barWidth = canvasWidth / audioAnalyser.frequencyBinCount;
+
+      let hue = index/audioAnalyser.frequencyBinCount * 360;
+      canvasContext.fillStyle = 'hsl(' + hue + ', 60%, 50%)';
+      canvasContext.fillRect(index * barWidth, offset, barWidth, height);
+    }
+
+    if(playingFlag)
+    {
+      window.requestAnimationFrame(drawFrequencyGraph);
+    }
+
+  }
+
+  function setNotif(notifText)
+  {
+    document.getElementById("notifs").innerText = notifText;
+  }
+
+  // Event handlers
+  function testButtonHandler() {
+    if (!playingFlag) {
+      playAudio();
+      window.requestAnimationFrame(drawFrequencyGraph); // This is what starts the FFT
+      playingFlag = !playingFlag;
+      setButtonText(buttonName, "Stop Audio");
+      setNotif("Playing....");
+    }
+    else {
+      stopAudio();
+      playingFlag = !playingFlag;
+      setButtonText(buttonName, "Play Audio");
+      setNotif("Stopped.");
+    }
+  }
+
+  function audioLoadedHandler() {
+    // This is called once the audio finishes loading into it's audio buffer
+    setNotif("Audio loaded, program ready.")
+    setButtonText(buttonName, "Play Audio");
+    unDisableButton(buttonName);
+  }
+
+  function activateEvents() {
+    // Convenience function to attach events
+    let btn = document.getElementById(buttonName);
+    btn.addEventListener("click", testButtonHandler);
+  }
+
+  // Main runtime starts here
+  setNotif("Loading audio, please wait...");
+
+  activateEvents();
+
+  debugger;
+  audioContext = new AudioContext();
+  createAudioAnalyzer();
+
+  loadAudio(audioFileName);
+
+</script>
+
+</html>

@@ -19,9 +19,9 @@
 	}
 	<b>The minimum delay between bar updates is currently set at @Delay ms, but each bar is independent...</b>
 	<div style="display:flex; flex-direction:column;">
-		<input type="range" min="50" max="2000" step="50" bind="@Delay" class="form-control" style="grid-row:1; grid-column:1/-1;" />
-		<input type="range" min="5" max="50" step="5" bind="@Count" class="form-control" style="grid-row:2; grid-column:1/-1;" />
-		<input type="range" min="100" max="500" step="50" bind="@ChartHeight" class="form-control" style="grid-row:3; grid-column:1/-1;" />
+		<input type="range" min="50" max="2000" step="50" @bind=Delay class="form-control" style="grid-row:1; grid-column:1/-1;" />
+		<input type="range" min="5" max="50" step="5" @bind=Count class="form-control" style="grid-row:2; grid-column:1/-1;" />
+		<input type="range" min="100" max="500" step="50" @bind=ChartHeight class="form-control" style="grid-row:3; grid-column:1/-1;" />
 		<div style="@OuterStyle">
 			@for (int i = 0; i < listData.Length; i++)
 			{
@@ -33,7 +33,7 @@
 		</div>
 	</div>
 }
-@functions
+@code
 {
 		int[] listData;
 		Random rng;
@@ -52,9 +52,9 @@
 			set { _count = value; ResetBars(); }
 		}
 
-		protected override void OnInit()
+		protected override void OnInitialized()
 		{
-			base.OnInit();
+			base.OnInitialized();
 			InnerStyle = $"display:flex; flex-direction:column-reverse; padding: 0; margin: 0; width:auto; grid-row:1;";
 			ResetBars();
 			Timer2 = new System.Timers.Timer(1000);
@@ -75,7 +75,7 @@
 			tokenSource = new System.Threading.CancellationTokenSource();
 			barTasks = new Task[Count];
 			listData = Enumerable.Range(1, Count).Select(x => 50).ToArray();
-			Invoke(StateHasChanged);
+			InvokeAsync(StateHasChanged);
 			Cancel = false;
 			Enumerable.Range(0, Count).ToList().ForEach(x => barTasks[x] = Task.Factory.StartNew(() => ManageItem(x, tokenSource.Token)));
 		}
@@ -87,7 +87,7 @@
 				await Task.Delay(Delay);
 				var margin = Math.Max(1, Math.Abs(100 - listData[x]));
 				listData[x] = Math.Min(100, Math.Max(10, listData[x] + rng.Next(-margin, margin)));
-				await Invoke(StateHasChanged);
+				await InvokeAsync(StateHasChanged);
 			}
 		}
 		protected override bool ShouldRender()

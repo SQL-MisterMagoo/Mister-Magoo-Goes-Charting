@@ -2,7 +2,7 @@
 	@($"#{Id}") @style
 </style>
 
-@functions {
-		[Parameter] protected RenderFragment style { get; set; }
-		[Parameter] protected string Id { get; set; }
+@code {
+		[Parameter] public RenderFragment style { get; set; }
+		[Parameter] public string Id { get; set; }
 }

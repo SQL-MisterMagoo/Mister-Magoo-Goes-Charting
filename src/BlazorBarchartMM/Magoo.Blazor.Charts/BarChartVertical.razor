@@ -45,32 +45,32 @@
 		}
 	</div>
 }
-@functions
+@code
 {
 		string _id;
-		[Parameter] protected int ChartHeight { get; set; } = 250;
-		[Parameter] protected int BarCount { get; set; }
-		[Parameter] protected Func<int> BarCountFunc { get; set; }
-		[Parameter] protected IEnumerable<double> Data { get; set; }
-		[Parameter] protected Func<int, double> DataFunc { get; set; }
-		[Parameter] protected string MyId { get => _id; set { _id = value; } }
-		[Parameter] protected string HeightUnits { get; set; } = "px";
-		[Parameter] protected string BarWidth { get; set; }
-		[Parameter] protected Func<int, string> BarWidthFunc { get; set; }
-		[Parameter] protected string BgColor { get; set; }
-		[Parameter] protected string Color { get; set; } = "white";
-		[Parameter] protected string Border { get; set; }
-		[Parameter] protected double BarDuration { get; set; } = 300;
-		[Parameter] protected double DampDuration { get; set; } = 1000;
-		[Parameter] protected string InnerStyle { get; set; } = "display:flex; flex-direction:column-reverse; padding: 0; margin: 0; width:auto; grid-row:1;";
-		[Parameter] protected string OuterStyle { get; set; }
-		[Parameter] protected BlazorBarStyle BarStyle { get; set; } = BlazorBarStyle.Normal;
+		[Parameter] public int ChartHeight { get; set; } = 250;
+		[Parameter] public int BarCount { get; set; }
+		[Parameter] public Func<int> BarCountFunc { get; set; }
+		[Parameter] public IEnumerable<double> Data { get; set; }
+		[Parameter] public Func<int, double> DataFunc { get; set; }
+		[Parameter] public string MyId { get => _id; set { _id = value; } }
+		[Parameter] public string HeightUnits { get; set; } = "px";
+		[Parameter] public string BarWidth { get; set; }
+		[Parameter] public Func<int, string> BarWidthFunc { get; set; }
+		[Parameter] public string BgColor { get; set; }
+		[Parameter] public string Color { get; set; } = "white";
+		[Parameter] public string Border { get; set; }
+		[Parameter] public double BarDuration { get; set; } = 300;
+		[Parameter] public double DampDuration { get; set; } = 1000;
+		[Parameter] public string InnerStyle { get; set; } = "display:flex; flex-direction:column-reverse; padding: 0; margin: 0; width:auto; grid-row:1;";
+		[Parameter] public string OuterStyle { get; set; }
+		[Parameter] public BlazorBarStyle BarStyle { get; set; } = BlazorBarStyle.Normal;
 
 		int Count => Data?.Count() ?? (BarCount > 0 ? BarCount : (BarCountFunc?.Invoke() ?? 0));
 
-		protected override void OnInit()
+		protected override void OnInitialized()
 		{
-			base.OnInit();
+			base.OnInitialized();
 		}
 
 		protected override void OnParametersSet()

@@ -19,9 +19,9 @@
 	}
 	<b>The minimum delay between bar updates is currently set at @Delay ms, but each bar is independent...</b>
 	<div style="display:flex; flex-direction:column;">
-		<input type="range" min="50" max="2000" step="50" bind="@Delay" class="form-control" style="grid-row:1; grid-column:1/-1;" />
-		<input type="range" min="5" max="50" step="5" bind="@Count" class="form-control" style="grid-row:2; grid-column:1/-1;" />
-		<input type="range" min="100" max="500" step="50" bind="@ChartHeight" class="form-control" style="grid-row:3; grid-column:1/-1;" />
+		<input type="range" min="50" max="2000" step="50" @bind=Delay class="form-control" style="grid-row:1; grid-column:1/-1;" />
+		<input type="range" min="5" max="50" step="5" @bind=Count class="form-control" style="grid-row:2; grid-column:1/-1;" />
+		<input type="range" min="100" max="500" step="50" @bind=ChartHeight class="form-control" style="grid-row:3; grid-column:1/-1;" />
 		<BarChartVertical Data="@listData"
 											BarStyle="@BlazorBarStyle.Normal"
 											ChartHeight="@ChartHeight"
@@ -30,7 +30,7 @@
 											DampDuration="1000"/>
 	</div>
 }
-@functions
+@code
 {
 		double[] listData;
 		Random rng;
@@ -49,9 +49,9 @@
 			set { _count = value; ResetBars(); }
 		}
 
-		protected override void OnInit()
+		protected override void OnInitialized()
 		{
-			base.OnInit();
+			base.OnInitialized();
 			ResetBars();
 			Timer2 = new System.Timers.Timer(1000);
 			Timer2.Elapsed += Timer2_Elapsed;
@@ -71,7 +71,7 @@
 			tokenSource = new System.Threading.CancellationTokenSource();
 			barTasks = new Task[Count];
 			listData = Enumerable.Range(1, Count).Select(x => 30.0 - x / 2).ToArray();
-			Invoke(StateHasChanged);
+			InvokeAsync(StateHasChanged);
 			Cancel = false;
 			Enumerable.Range(0, Count).ToList().ForEach(x => barTasks[x] = Task.Factory.StartNew(() => ManageItem(x, tokenSource.Token)));
 		}
@@ -87,7 +87,7 @@
 				//listData[x] = Math.Min(100, Math.Max(10, listData[x] + (double)rng.Next((int)-margin, (int)margin)));
 				listData[x] = pival;
 				y = (y+1) % Count;
-				await Invoke(StateHasChanged);
+				await InvokeAsync(StateHasChanged);
 			}
 		}
 		protected override bool ShouldRender()
